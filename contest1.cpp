@@ -74,7 +74,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 	
 	if(laserRange == 11)
 		laserRange = 0;
-	ROS_INFO("LASER DATA COLLECTED");
+	//ROS_INFO("LASER DATA COLLECTED");
 
 	//ROS_INFO("Size of laser scan array: %i and size of offset: %i", laserSize, laserOffset);
 }
@@ -83,7 +83,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 	posX = msg->pose.pose.position.x;
 	posY = msg->pose.pose.position.y;
 	yaw = tf::getYaw(msg->pose.pose.orientation);
-	ROS_INFO("ODOM DATA COLLECTED");
+	//ROS_INFO("ODOM DATA COLLECTED");
 
 	//ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, yaw*180/pi);
 }
@@ -108,7 +108,7 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	}*/
 	
 	//Check that there is a map to check
-	if(mapWidth>detectionRadius&&mapHeight>detectionRadius&&indexPos>detectionRadius*detectionRadius){
+	/*if(mapWidth>detectionRadius&&mapHeight>detectionRadius&&indexPos>detectionRadius*detectionRadius){
 		blackNE=0, blackSE=0, blackSW=0, blackNW=0, unknownNE=0, unknownSE=0, unknownSW=0, unknownNW=0;
 		//NE quadrant from robot
 		for(int i=0; i<detectionRadius; i++){
@@ -157,10 +157,10 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 				}
 			}
 		}
-	}
+	}*/
 	
 		
-	ROS_INFO("OCCUPANCY DATA COLLECTED");
+	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
 
@@ -190,21 +190,27 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
-		//ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
+		ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
 		indexPos = (posY-mapY)/mapResolution*mapWidth + (posX-mapX)/mapResolution;
 		//ROS_INFO("Robot Index: %d", indexPos);	
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
 		
-		if(laserRange < 1&&laserRange!=0){
+		if(laserRange < 1){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
 		}
+		
 
 		if(turnflag==0){
 			angular = 0.0;
 			linear = 0.2;
 		}
+		/*else if(laserRange==0){
+			angular = 0.0;
+			linear = 0.0;
+			ROS_INFO("NO LASER DATA!!!");
+		}*/
 		else{
 			yawCurr=yaw;
 			linear = 0;
@@ -228,6 +234,20 @@ int main(int argc, char **argv)
 				angular = 0;
 				turnflag=0;
 		}
+
+		if(bumperRight || bumperCenter || bumperLeft)
+		{
+			for(int i=0;i<1000;i++){
+				angular = 0.0;
+				linear = -0.2;
+				vel.angular.z = angular;
+  				vel.linear.x = linear;
+				ros::spinOnce();
+  				vel_pub.publish(vel);
+			}
+		}
+
+
 		/*if(posX < 0.5 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.7)
 		{
 			angular = 0.0;
