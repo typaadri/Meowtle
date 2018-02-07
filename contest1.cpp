@@ -196,9 +196,12 @@ int main(int argc, char **argv)
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
 		
-		if(laserRange < 1){
+		if(laserRange < 0.5){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
+		}
+		else if(laserRange > 2){
+			turnflag = 0;
 		}
 		
 
@@ -232,7 +235,7 @@ int main(int argc, char **argv)
 
 				ROS_INFO("SUCCESSFUL TURN!!!!");
 				angular = 0;
-				turnflag=0;
+				//turnflag=0;
 		}
 
 		if(bumperRight || bumperCenter || bumperLeft)
