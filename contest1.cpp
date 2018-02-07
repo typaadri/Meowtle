@@ -163,7 +163,28 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
+void turn(double ang){
+			yawCurr=yaw;
+			linear = 0;
+			angular = -pi/6; 
+			vel.angular.z = angular;
+  			vel.linear.x = linear;
 
+			//Turn while loop
+			while (abs(yaw-yawCurr)<ang*pi/180){
+				ros::spinOnce();
+  				vel_pub.publish(vel);
+				if(yawRead!=yaw){
+					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
+				}
+				else {
+					yawRead=(int) yaw;
+				}
+			}
+
+				ROS_INFO("SUCCESSFUL TURN!!!!");
+				angular = 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -215,38 +236,34 @@ int main(int argc, char **argv)
 			ROS_INFO("NO LASER DATA!!!");
 		}*/
 		else{
-			yawCurr=yaw;
-			linear = 0;
-			angular = -pi/6; 
-			vel.angular.z = angular;
-  			vel.linear.x = linear;
-
-			//Turn while loop
-			while (abs(yaw-yawCurr)<pi/8){
-				ros::spinOnce();
-  				vel_pub.publish(vel);
-				if(yawRead!=yaw){
-					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
-				}
-				else {
-					yawRead=(int) yaw;
-				}
-			}
-
-				ROS_INFO("SUCCESSFUL TURN!!!!");
-				angular = 0;
+			turn(22.5);
 				//turnflag=0;
 		}
 
 		if(bumperRight || bumperCenter || bumperLeft)
 		{
-			for(int i=0;i<1000;i++){
+			Pos1X = posX;
+			Pos1Y = posY;
+			Dist = sqrt((posX-Pos1X)^2+(posY-Pos1Y)^2)
+			while(Dist < 2){
 				angular = 0.0;
 				linear = -0.2;
 				vel.angular.z = angular;
   				vel.linear.x = linear;
 				ros::spinOnce();
   				vel_pub.publish(vel);
+			}
+			if(bumperRight)
+			{
+				turn(10)
+			}
+			else if(bumperLeft)
+			{
+				turn(-10)
+			}
+			else if(bumperCenter)
+			{
+				turn(90)
 			}
 		}
 
