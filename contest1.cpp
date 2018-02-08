@@ -163,17 +163,17 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
-void turn(double ang){
+void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
 			angular = -pi/6; 
-			vel.angular.z = angular;
-  			vel.linear.x = linear;
+			velocity.angular.z = angular;
+  			velocity.linear.x = linear;
 
 			//Turn while loop
 			while (abs(yaw-yawCurr)<ang*pi/180){
 				ros::spinOnce();
-  				vel_pub.publish(vel);
+  				velocityPub.publish(velocity);
 				if(yawRead!=yaw){
 					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
 				}
@@ -236,16 +236,16 @@ int main(int argc, char **argv)
 			ROS_INFO("NO LASER DATA!!!");
 		}*/
 		else{
-			turn(22.5);
+			turn(22.5, vel_pub, vel);
 				//turnflag=0;
 		}
 
 		if(bumperRight || bumperCenter || bumperLeft)
 		{
-			Pos1X = posX;
-			Pos1Y = posY;
-			Dist = sqrt((posX-Pos1X)^2+(posY-Pos1Y)^2)
-			while(Dist < 2){
+			int pos1X = posX;
+			int pos1Y = posY;
+			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
+			while(dist < 2){
 				angular = 0.0;
 				linear = -0.2;
 				vel.angular.z = angular;
@@ -253,17 +253,23 @@ int main(int argc, char **argv)
 				ros::spinOnce();
   				vel_pub.publish(vel);
 			}
+			angular = 0.0;
+			linear = 0.0;
+			vel.angular.z = angular;
+  			vel.linear.x = linear;
+			ros::spinOnce();
+  			vel_pub.publish(vel);
 			if(bumperRight)
 			{
-				turn(10)
+				turn(10, vel_pub, vel);
 			}
 			else if(bumperLeft)
 			{
-				turn(-10)
+				turn(-10, vel_pub, vel);
 			}
 			else if(bumperCenter)
 			{
-				turn(90)
+				turn(90, vel_pub, vel);
 			}
 		}
 
