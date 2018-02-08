@@ -42,7 +42,7 @@ unsigned int blackNE=0, blackSE=0, blackSW=0, blackNW=0, unknownNE=0, unknownSE=
 const unsigned int detectionRadius=20;
 
 // Bumperflags
-bool bRight, bLeft, bCenter;
+bool bRight=0, bLeft=0, bCenter=0;
 
 //flag for turning
 int turnflag = 0;
@@ -99,6 +99,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 
 	//ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, yaw*180/pi);
 }
+
 
 void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	mapWidth = msg.info.width;
@@ -174,11 +175,33 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
-
 void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
-			angular = -pi/12; 
+			angular = -pi/8; 
+			velocity.angular.z = angular;
+  			velocity.linear.x = linear;
+
+			//Turn while loop
+			while (abs(yaw-yawCurr)<ang*pi/180){
+				ros::spinOnce();
+  				velocityPub.publish(velocity);
+				if(yawRead!=yaw){
+					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
+				}
+				else {
+					yawRead=(int) yaw;
+				}
+			}
+
+			ROS_INFO("SUCCESSFUL TURN!!!!");
+			angular = 0;
+			straightYaw = yaw;
+}
+
+void movingturn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
+			yawCurr=yaw;
+			angular = -pi/8; 
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
 
@@ -223,7 +246,7 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
-		ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
+		//ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
 		indexPos = (posY-mapY)/mapResolution*mapWidth + (posX-mapX)/mapResolution;
 		//ROS_INFO("Robot Index: %d", indexPos);	
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
@@ -232,11 +255,12 @@ int main(int argc, char **argv)
 
 		if(bRight || bCenter || bLeft)
 		{
-
+			ROS_INFO("Bumper flag works");
+			
 			int pos1X = posX;
 			int pos1Y = posY;
-			double dist;
-			while(dist < 2){
+			double dist=0;
+			while(dist < 0.3){
 				angular = 0.0;
 				linear = -0.2;
 				vel.angular.z = angular;
@@ -244,6 +268,7 @@ int main(int argc, char **argv)
 				ros::spinOnce();
   				vel_pub.publish(vel);
  				dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
+				ROS_INFO("Backing up");
 			}
 			angular = 0.0;
 			linear = 0.0;
@@ -253,38 +278,41 @@ int main(int argc, char **argv)
   			vel_pub.publish(vel);
 			if(bRight)
 			{
-				turn(10, vel_pub, vel);
+				turn(45, vel_pub, vel);
 				bRight = 0;
+				ROS_INFO("Bumper R");
+	
 			}
 			else if(bLeft)
 			{
-				turn(-10, vel_pub, vel);
+				turn(-45, vel_pub, vel);
 				bLeft = 0;
+				ROS_INFO("Bumper L");
 			}
 			else if(bCenter)
 			{
 				turn(90, vel_pub, vel);
 				bCenter = 0;
+				ROS_INFO("Bumper C");
 			}
 		}
 		
 		else if(turnflag==0){
+			//ROS_INFO("Straightness: %f", yaw-straightYaw);
 			angular = 0.0;
 			linear = 0.2;
-			if(abs(straightYaw-yaw)>pi/36){
-				if(straightYaw-yaw<0){
-					turn(5, vel_pub, vel);
-					straightYaw=yaw;
+			if(abs(yaw-straightYaw)>pi/180){
+				if(yaw-straightYaw>0){
+					angular = -pi/8;
 				}
 				else{
-					turn(-5, vel_pub, vel);
-					straightYaw=yaw;
-					}
+					angular = pi/8;
+				}
 			}
 			
 		}
 		else{
-			turn(22.5, vel_pub, vel);
+			turn(10, vel_pub, vel);
 		}
 
 
@@ -300,7 +328,7 @@ int main(int argc, char **argv)
 		}
 		else if(laserRange > 1.5 && turnflag==1){
 			turnflag = 0;
-			straightYaw = yaw;
+
 			
 		}
 	}
