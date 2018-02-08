@@ -23,6 +23,9 @@ int yawRead=0;
 double pi = 3.1416;
 
 double bumperLeft = 0, bumperCenter = 0, bumperRight = 0;
+double pos1X = 0;
+double pos1Y = 0;
+double dist=0;
 
 //for laser
 double laserRange = 10;
@@ -49,21 +52,21 @@ int turnflag = 0;
 
 void bumperCallback(const kobuki_msgs::BumperEvent msg){
 	if(msg.bumper==0)
-		bumperLeft = !bumperLeft;
+		bumperLeft = msg.state;
 	else if(msg.bumper == 1)
-		bumperCenter = !bumperCenter;
+		bumperCenter = msg.state;
 	else if(msg.bumper == 2)
-		bumperRight = !bumperRight;
+		bumperRight = msg.state;
 	
 	// initialize bumper flag
-	if(bumperRight)
+	if(bumperRight==1)
 		bRight = 1;
-	else if(bumperLeft)
+	if(bumperLeft==1)
 		bLeft = 1;
-	else if(bumperCenter)
+	if(bumperCenter==1)
 		bCenter = 1;
 
-	ROS_INFO("BUMPER DATA COLLECTED");
+	ROS_INFO("BUMPER DATA COLLECTED: %d, %d", msg.bumper, msg.state);
 }
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
@@ -199,9 +202,10 @@ void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity)
 			straightYaw = yaw;
 }
 
-void movingturn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
+void slowturn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
-			angular = -pi/8; 
+			linear = 0;
+			angular = -pi/12; 
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
 
@@ -238,7 +242,9 @@ int main(int argc, char **argv)
 	angular = 0.0;
 	linear = 0.0;
 	geometry_msgs::Twist vel;
-
+	
+	bool start=1;
+	
 	while(ros::ok()){
 		ros::spinOnce();
 		//.....**E-STOP DO NOT TOUCH**.......
@@ -247,49 +253,54 @@ int main(int argc, char **argv)
 
 		//fill with your code
 		//ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
-		indexPos = (posY-mapY)/mapResolution*mapWidth + (posX-mapX)/mapResolution;
+		//indexPos = (posY-mapY)/mapResolution*mapWidth + (posX-mapX)/mapResolution;
 		//ROS_INFO("Robot Index: %d", indexPos);	
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
-	
-
-		if(bRight || bCenter || bLeft)
+		
+		if(start==1){
+			slowturn(360,vel_pub,vel);
+			start=0;
+		}
+		
+		if(bumperRight==1||bumperLeft==1||bumperCenter==1)
 		{
 			ROS_INFO("Bumper flag works");
 			
-			int pos1X = posX;
-			int pos1Y = posY;
-			double dist=0;
-			while(dist < 0.3){
+			pos1X = posX;
+			pos1Y = posY;
+			dist=0;
+			while(dist < 0.1){
+				ROS_INFO("Backing up: %f, %f, %f", dist, pos1X, posX);
 				angular = 0.0;
 				linear = -0.2;
 				vel.angular.z = angular;
   				vel.linear.x = linear;
-				ros::spinOnce();
   				vel_pub.publish(vel);
  				dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
-				ROS_INFO("Backing up");
+				ROS_INFO("Backing up: %f", dist);
+				ros::spinOnce();
 			}
 			angular = 0.0;
 			linear = 0.0;
 			vel.angular.z = angular;
   			vel.linear.x = linear;
-			ros::spinOnce();
   			vel_pub.publish(vel);
-			if(bRight)
+			//turn(10, vel_pub, vel);
+			if(bRight==1)
 			{
-				turn(45, vel_pub, vel);
+				turn(-15, vel_pub, vel);
 				bRight = 0;
 				ROS_INFO("Bumper R");
 	
 			}
-			else if(bLeft)
+			if(bLeft==1)
 			{
-				turn(-45, vel_pub, vel);
+				turn(15, vel_pub, vel);
 				bLeft = 0;
 				ROS_INFO("Bumper L");
 			}
-			else if(bCenter)
+			if(bCenter==1)
 			{
 				turn(90, vel_pub, vel);
 				bCenter = 0;
@@ -315,13 +326,6 @@ int main(int argc, char **argv)
 			turn(10, vel_pub, vel);
 		}
 
-
-
-  		vel.angular.z = angular;
-  		vel.linear.x = linear;
-
-  		vel_pub.publish(vel);
-
 		if(laserRange < 0.75){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
@@ -331,6 +335,10 @@ int main(int argc, char **argv)
 
 			
 		}
+		vel.angular.z = angular;
+  		vel.linear.x = linear;
+
+  		vel_pub.publish(vel);
 	}
 
 	return 0;
