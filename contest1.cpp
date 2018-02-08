@@ -42,7 +42,7 @@ unsigned int blackNE=0, blackSE=0, blackSW=0, blackNW=0, unknownNE=0, unknownSE=
 const unsigned int detectionRadius=20;
 
 // Bumperflags
-bool bRight, bLeft, bFront;
+bool bRight, bLeft, bCenter;
 
 //flag for turning
 int turnflag = 0;
@@ -54,6 +54,15 @@ void bumperCallback(const kobuki_msgs::BumperEvent msg){
 		bumperCenter = !bumperCenter;
 	else if(msg.bumper == 2)
 		bumperRight = !bumperRight;
+	
+	// initialize bumper flag
+	if(bumperRight)
+		bRight = 1;
+	else if(bumperLeft)
+		bLeft = 1;
+	else if(bumperCenter)
+		bCenter = 1;
+
 	ROS_INFO("BUMPER DATA COLLECTED");
 }
 
@@ -90,7 +99,6 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 
 	//ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, yaw*180/pi);
 }
-
 
 void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	mapWidth = msg.info.width;
@@ -166,6 +174,7 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
+
 void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
@@ -221,21 +230,8 @@ int main(int argc, char **argv)
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
 	
 
-		if(bumperRight || bumperCenter || bumperLeft)
+		if(bRight || bCenter || bLeft)
 		{
-			
-			if(bumperRight)
-			{
-				bRight = 1;
-			}
-			else if(bumperLeft)
-			{
-				bLeft = 1;
-			}
-			else if(bumperCenter)
-			{
-				bFront = 1;
-			}
 
 			int pos1X = posX;
 			int pos1Y = posY;
@@ -265,10 +261,10 @@ int main(int argc, char **argv)
 				turn(-10, vel_pub, vel);
 				bLeft = 0;
 			}
-			else if(bFront)
+			else if(bCenter)
 			{
 				turn(90, vel_pub, vel);
-				bFront = 0;
+				bCenter = 0;
 			}
 		}
 		
