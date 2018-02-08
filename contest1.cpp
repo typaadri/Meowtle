@@ -299,14 +299,14 @@ int main(int argc, char **argv)
 			//turn(10, vel_pub, vel);
 			if(bRight==1)
 			{
-				turn(-15, vel_pub, vel);
+				turn(-25, vel_pub, vel);
 				bRight = 0;
 				ROS_INFO("Bumper R");
 	
 			}
 			if(bLeft==1)
 			{
-				turn(15, vel_pub, vel);
+				turn(25, vel_pub, vel);
 				bLeft = 0;
 				ROS_INFO("Bumper L");
 			}
@@ -346,7 +346,7 @@ int main(int argc, char **argv)
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
 			goRight = rand()%2;
 		}
-		else if(laserRange > 1.5 && turnflag==1){
+		else if(laserRange > 1 && turnflag==1){
 			turnflag = 0;
 
 			
