@@ -18,7 +18,7 @@ using namespace std;
 double angular, linear;
 
 //for odom
-double posX, posY, yaw, yawCurr=0;
+double posX, posY, yaw, yawCurr=0, straightYaw;
 int yawRead=0;
 double pi = 3.1416;
 
@@ -40,6 +40,9 @@ int p1data=0;
 unsigned int blackNE=0, blackSE=0, blackSW=0, blackNW=0, unknownNE=0, unknownSE=0, unknownSW=0, unknownNW=0;
 
 const unsigned int detectionRadius=20;
+
+// Bumperflags
+bool bRight, bLeft, bFront;
 
 //flag for turning
 int turnflag = 0;
@@ -166,7 +169,7 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
-			angular = -pi/6; 
+			angular = -pi/12; 
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
 
@@ -216,93 +219,98 @@ int main(int argc, char **argv)
 		//ROS_INFO("Robot Index: %d", indexPos);	
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
+	
+
+		if(bumperRight || bumperCenter || bumperLeft)
+		{
+			
+			if(bumperRight)
+			{
+				bRight = 1;
+			}
+			else if(bumperLeft)
+			{
+				bLeft = 1;
+			}
+			else if(bumperCenter)
+			{
+				bFront = 1;
+			}
+
+			int pos1X = posX;
+			int pos1Y = posY;
+			double dist;
+			while(dist < 2){
+				angular = 0.0;
+				linear = -0.2;
+				vel.angular.z = angular;
+  				vel.linear.x = linear;
+				ros::spinOnce();
+  				vel_pub.publish(vel);
+ 				dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
+			}
+			angular = 0.0;
+			linear = 0.0;
+			vel.angular.z = angular;
+  			vel.linear.x = linear;
+			ros::spinOnce();
+  			vel_pub.publish(vel);
+			if(bRight)
+			{
+				turn(10, vel_pub, vel);
+				bRight = 0;
+			}
+			else if(bLeft)
+			{
+				turn(-10, vel_pub, vel);
+				bLeft = 0;
+			}
+			else if(bFront)
+			{
+				turn(90, vel_pub, vel);
+				bFront = 0;
+			}
+		}
 		
-		if(laserRange < 0.5){
+		else if(turnflag==0){
+			angular = 0.0;
+			linear = 0.2;
+			if(abs(straightYaw-yaw)>pi/36){
+				if(straightYaw-yaw<0){
+					turn(5, vel_pub, vel);
+					straightYaw=yaw;
+				}
+				else{
+					turn(-5, vel_pub, vel);
+					straightYaw=yaw;
+					}
+			}
+			
+		}
+		else{
+			turn(22.5, vel_pub, vel);
+		}
+
+
+
+  		vel.angular.z = angular;
+  		vel.linear.x = linear;
+
+  		vel_pub.publish(vel);
+
+		if(laserRange < 0.75){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
 		}
-		else if(laserRange > 2){
+		else if(laserRange > 1.5 && turnflag==1){
 			turnflag = 0;
+			straightYaw = yaw;
+			
 		}
-		
+	}
 
-		if(turnflag==0){
-			angular = 0.0;
-			linear = 0.2;
-		}
-		/*else if(laserRange==0){
-			angular = 0.0;
-			linear = 0.0;
-			ROS_INFO("NO LASER DATA!!!");
-		}*/
-		else{
-			turn(22.5, vel_pub, vel);
-				//turnflag=0;
-		}
-
-		if(bumperRight)
-		{
-			int pos1X = posX;
-			int pos1Y = posY;
-			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
-			while(dist < 2){
-				angular = 0.0;
-				linear = -0.2;
-				vel.angular.z = angular;
-  				vel.linear.x = linear;
-				ros::spinOnce();
-  				vel_pub.publish(vel);
-			}
-			angular = 0.0;
-			linear = 0.0;
-			vel.angular.z = angular;
-  			vel.linear.x = linear;
-			ros::spinOnce();
-  			vel_pub.publish(vel);
-			turn(10, vel_pub, vel);
-		}
-		if(bumperLeft)
-		{
-			int pos1X = posX;
-			int pos1Y = posY;
-			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
-			while(dist < 2){
-				angular = 0.0;
-				linear = -0.2;
-				vel.angular.z = angular;
-  				vel.linear.x = linear;
-				ros::spinOnce();
-  				vel_pub.publish(vel);
-			}
-			angular = 0.0;
-			linear = 0.0;
-			vel.angular.z = angular;
-  			vel.linear.x = linear;
-			ros::spinOnce();
-  			vel_pub.publish(vel);
-			turn(-10, vel_pub, vel);
-		}
-		if(bumperCenter)
-		{
-			int pos1X = posX;
-			int pos1Y = posY;
-			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
-			while(dist < 2){
-				angular = 0.0;
-				linear = -0.2;
-				vel.angular.z = angular;
-  				vel.linear.x = linear;
-				ros::spinOnce();
-  				vel_pub.publish(vel);
-			}
-			angular = 0.0;
-			linear = 0.0;
-			vel.angular.z = angular;
-  			vel.linear.x = linear;
-			ros::spinOnce();
-  			vel_pub.publish(vel);
-			turn(90, vel_pub, vel);
-		}		
+	return 0;
+}
 
 
 		/*if(posX < 0.5 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.7)
@@ -338,12 +346,3 @@ int main(int argc, char **argv)
 			angular = 0.0;
 			linear = 0.0;
 		}*/
-
-  		vel.angular.z = angular;
-  		vel.linear.x = linear;
-
-  		vel_pub.publish(vel);
-	}
-
-	return 0;
-}
