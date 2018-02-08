@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 				//turnflag=0;
 		}
 
-		if(bumperRight || bumperCenter || bumperLeft)
+		if(bumperRight)
 		{
 			int pos1X = posX;
 			int pos1Y = posY;
@@ -259,19 +259,50 @@ int main(int argc, char **argv)
   			vel.linear.x = linear;
 			ros::spinOnce();
   			vel_pub.publish(vel);
-			if(bumperRight)
-			{
-				turn(10, vel_pub, vel);
-			}
-			else if(bumperLeft)
-			{
-				turn(-10, vel_pub, vel);
-			}
-			else if(bumperCenter)
-			{
-				turn(90, vel_pub, vel);
-			}
+			turn(10, vel_pub, vel);
 		}
+		if(bumperLeft)
+		{
+			int pos1X = posX;
+			int pos1Y = posY;
+			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
+			while(dist < 2){
+				angular = 0.0;
+				linear = -0.2;
+				vel.angular.z = angular;
+  				vel.linear.x = linear;
+				ros::spinOnce();
+  				vel_pub.publish(vel);
+			}
+			angular = 0.0;
+			linear = 0.0;
+			vel.angular.z = angular;
+  			vel.linear.x = linear;
+			ros::spinOnce();
+  			vel_pub.publish(vel);
+			turn(-10, vel_pub, vel);
+		}
+		if(bumperCenter)
+		{
+			int pos1X = posX;
+			int pos1Y = posY;
+			double dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
+			while(dist < 2){
+				angular = 0.0;
+				linear = -0.2;
+				vel.angular.z = angular;
+  				vel.linear.x = linear;
+				ros::spinOnce();
+  				vel_pub.publish(vel);
+			}
+			angular = 0.0;
+			linear = 0.0;
+			vel.angular.z = angular;
+  			vel.linear.x = linear;
+			ros::spinOnce();
+  			vel_pub.publish(vel);
+			turn(90, vel_pub, vel);
+		}		
 
 
 		/*if(posX < 0.5 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.7)
