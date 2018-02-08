@@ -26,6 +26,7 @@ double bumperLeft = 0, bumperCenter = 0, bumperRight = 0;
 double pos1X = 0;
 double pos1Y = 0;
 double dist=0;
+bool goRight=0;
 
 //for laser
 double laserRange = 10;
@@ -182,8 +183,14 @@ void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity)
 			yawCurr=yaw;
 			linear = 0;
 			angular = -pi/8; 
+
+			if(ang<0){
+				angular=-1*angular;
+				ang=-1*ang;
+			}
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
+				
 
 			//Turn while loop
 			while (abs(yaw-yawCurr)<ang*pi/180){
@@ -205,10 +212,14 @@ void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity)
 void slowturn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
-			angular = -pi/12; 
+			angular = -pi/10; 
+
+			if(ang<0){
+				angular=-1*angular;
+				ang=-1*ang;
+			}
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
-
 			//Turn while loop
 			while (abs(yaw-yawCurr)<ang*pi/180){
 				ros::spinOnce();
@@ -243,7 +254,10 @@ int main(int argc, char **argv)
 	linear = 0.0;
 	geometry_msgs::Twist vel;
 	
-	bool start=1;
+	slowturn(90,vel_pub,vel);
+	slowturn(90,vel_pub,vel);
+	slowturn(90,vel_pub,vel);
+	slowturn(90,vel_pub,vel);
 	
 	while(ros::ok()){
 		ros::spinOnce();
@@ -258,10 +272,6 @@ int main(int argc, char **argv)
 		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
 		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
 		
-		if(start==1){
-			slowturn(360,vel_pub,vel);
-			start=0;
-		}
 		
 		if(bumperRight==1||bumperLeft==1||bumperCenter==1)
 		{
@@ -323,12 +333,18 @@ int main(int argc, char **argv)
 			
 		}
 		else{
-			turn(10, vel_pub, vel);
+			if(goRight){
+				turn(10, vel_pub, vel);
+			}
+			else{
+				turn(-10,vel_pub,vel);
+			}
 		}
 
-		if(laserRange < 0.75){
+		if(laserRange < 0.75 && turnflag==0){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
+			goRight = rand()%2;
 		}
 		else if(laserRange > 1.5 && turnflag==1){
 			turnflag = 0;
@@ -344,37 +360,3 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-
-		/*if(posX < 0.5 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.7)
-		{
-			angular = 0.0;
-			linear = 0.2;
-		}
-		else if(posX > 0.4 && yaw < pi/2 && !bumperRight && !bumperCenter && !bumperLeft && laserRange < 0.5)
-		{
-			angular = pi/6;
-			linear = 0.0;
-		} 
-		else if(laserRange > 1.0 && !bumperRight && !bumperCenter && !bumperLeft)
-		{
-			if(yaw < 17*pi/36 || posX > 0.6)
-			{
-				angular = pi/12;
-				linear = 0.1;
-			}
-			else if(yaw > 19*pi/36 || posX < 0.4)
-			{
-				angular = -pi/12;
-				linear = 0.1;
-			}
-			else
-			{
-				angular = 0;
-				linear = 0.1;
-			}
-		}
-		else 
-		{
-			angular = 0.0;
-			linear = 0.0;
-		}*/
