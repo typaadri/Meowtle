@@ -52,6 +52,7 @@ bool bRight=0, bLeft=0, bCenter=0;
 int turnflag = 0;
 
 void bumperCallback(const kobuki_msgs::BumperEvent msg){
+	//Current Bumper States
 	if(msg.bumper==0)
 		bumperLeft = msg.state;
 	else if(msg.bumper == 1)
@@ -59,7 +60,7 @@ void bumperCallback(const kobuki_msgs::BumperEvent msg){
 	else if(msg.bumper == 2)
 		bumperRight = msg.state;
 	
-	// initialize bumper flag
+	//Resettable bumper hit flag
 	if(bumperRight==1)
 		bRight = 1;
 	if(bumperLeft==1)
@@ -71,6 +72,7 @@ void bumperCallback(const kobuki_msgs::BumperEvent msg){
 }
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
+	//Same as tutorial
 	laserSize = (msg->angle_max - msg->angle_min)/msg->angle_increment;
 	laserOffset = desiredAngle*pi/(180*msg->angle_increment);
 	laserRange = 11;
@@ -96,6 +98,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 }
 
 void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
+	//Same as tutorial
 	posX = msg->pose.pose.position.x;
 	posY = msg->pose.pose.position.y;
 	yaw = tf::getYaw(msg->pose.pose.orientation);
@@ -106,6 +109,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 
 
 void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
+	//Same as tutorial
 	mapWidth = msg.info.width;
 	mapHeight = msg.info.height;
 	mapResolution = msg.info.resolution;
@@ -113,127 +117,38 @@ void occupancyCallback(const nav_msgs::OccupancyGrid& msg){
 	mapY = msg.info.origin.position.y;
 	randomMap = msg.data[msg.info.width*msg.info.height-1];
 	
-	/*//Find number of unknown points (for debugging)
-	p1data=0;
-	for(int i=0; i<msg.info.width*msg.info.height; i++){
-		if(msg.data[i]==-1){
-			point1 = i;
-			p1data++;			
-			//break;
-		}
-	}*/
-	
-	//Check that there is a map to check
-	/*if(mapWidth>detectionRadius&&mapHeight>detectionRadius&&indexPos>detectionRadius*detectionRadius){
-		blackNE=0, blackSE=0, blackSW=0, blackNW=0, unknownNE=0, unknownSE=0, unknownSW=0, unknownNW=0;
-		//NE quadrant from robot
-		for(int i=0; i<detectionRadius; i++){
-			for(int j=0; j<detectionRadius; j++){
-				if(indexPos+j+mapWidth*i>0){
-					if(msg.data[indexPos+j+mapWidth*i]>0)
-						blackNE++;
-					if(msg.data[indexPos+j+mapWidth*i]==-1)
-						unknownNE++;
-				}
-			}
-		}
-
-		//SE quadrant from robot
-		for(int i=0; i<detectionRadius; i++){
-			for(int j=0; j<detectionRadius; j++){
-				if(indexPos+j-mapWidth*i>0){
-					if(msg.data[indexPos+j-mapWidth*i]>0)
-						blackSE++;
-					if(msg.data[indexPos+j-mapWidth*i]==-1)
-						unknownSE++;
-				}
-			}
-		}
-
-		//SW quadrant from robot
-		for(int i=0; i<detectionRadius; i++){
-			for(int j=0; j<detectionRadius; j++){
-				if(indexPos-j-mapWidth*i>0){
-					if(msg.data[indexPos-j-mapWidth*i]>0)
-						blackSW++;
-					if(msg.data[indexPos-j-mapWidth*i]==-1)
-						unknownSW++;
-				}
-			}
-		}
-
-		//NW quadrant from robot
-		for(int i=0; i<detectionRadius; i++){
-			for(int j=0; j<detectionRadius; j++){
-				if(indexPos-j+mapWidth*i>0){
-					if(msg.data[indexPos-j+mapWidth*i]>0)
-						blackNW++;
-					if(msg.data[indexPos-j+mapWidth*i]==-1)
-						unknownNW++;
-				}
-			}
-		}
-	}*/
-	
 		
 	//ROS_INFO("OCCUPANCY DATA COLLECTED");
 	//ROS_INFO("Width: %i, Height: %i, Resolution: %f, Origin: (%f,%f), Random Map: %d", msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y, msg.data[msg.info.width*msg.info.height-1]);
 }
+
+//A function for turning a specific number of degrees
 void turn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
 			yawCurr=yaw;
 			linear = 0;
 			angular = -pi/8; 
-
+			
+			//Determines CW or CCW movement
 			if(ang<0){
 				angular=-1*angular;
 				ang=-1*ang;
 			}
+			//Turn velocities are published after determining direction
 			velocity.angular.z = angular;
   			velocity.linear.x = linear;
+  			velocityPub.publish(velocity);
 				
-
-			//Turn while loop
+			//Turn until difference is yaw from start is desired angle
 			while (abs(yaw-yawCurr)<ang*pi/180){
+				//Updates about the robot yaw are required
 				ros::spinOnce();
   				velocityPub.publish(velocity);
-				if(yawRead!=yaw){
-					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
-				}
-				else {
-					yawRead=(int) yaw;
-				}
 			}
 
 			ROS_INFO("SUCCESSFUL TURN!!!!");
+			//Reset values
 			angular = 0;
 			straightYaw = yaw;
-}
-
-void slowturn(double ang, ros::Publisher velocityPub, geometry_msgs::Twist velocity){
-			yawCurr=yaw;
-			linear = 0;
-			angular = -pi/10; 
-
-			if(ang<0){
-				angular=-1*angular;
-				ang=-1*ang;
-			}
-			velocity.angular.z = angular;
-  			velocity.linear.x = linear;
-			//Turn while loop
-			while (abs(yaw-yawCurr)<ang*pi/180){
-				ros::spinOnce();
-  				velocityPub.publish(velocity);
-				if(yawRead!=yaw){
-					//ROS_INFO("Only %f left. %f", 90-abs(yaw-yawCurr)*180/pi, laserRange);
-				}
-				else {
-					yawRead=(int) yaw;
-				}
-			}
-
-				ROS_INFO("SUCCESSFUL TURN!!!!");
-				angular = 0;
 }
 
 int main(int argc, char **argv)
@@ -254,10 +169,11 @@ int main(int argc, char **argv)
 	linear = 0.0;
 	geometry_msgs::Twist vel;
 	
-	slowturn(90,vel_pub,vel);
-	slowturn(90,vel_pub,vel);
-	slowturn(90,vel_pub,vel);
-	slowturn(90,vel_pub,vel);
+	//Turn 360 degrees at start to collect as much data as possible
+	turn(90,vel_pub,vel);
+	turn(90,vel_pub,vel);
+	turn(90,vel_pub,vel);
+	turn(90,vel_pub,vel);
 	
 	while(ros::ok()){
 		ros::spinOnce();
@@ -266,13 +182,8 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
-		//ROS_INFO("Position: (%f,%f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
-		//indexPos = (posY-mapY)/mapResolution*mapWidth + (posX-mapX)/mapResolution;
-		//ROS_INFO("Robot Index: %d", indexPos);	
-		//ROS_INFO("Blacks: %d, %d, %d, %d. Unknowns: %d, %d, %d, %d.", blackNE, blackSE, blackSW, blackNW, unknownNE, unknownSE, unknownSW, unknownNW);
-		//ROS_INFO("Non clear: %d, Last @: %d", p1data, point1);	
 		
-		
+		//First check if a bumper is currently being impacted
 		if(bumperRight==1||bumperLeft==1||bumperCenter==1)
 		{
 			ROS_INFO("Bumper flag works");
@@ -280,6 +191,7 @@ int main(int argc, char **argv)
 			pos1X = posX;
 			pos1Y = posY;
 			dist=0;
+			//Back away from the obstacle 10cm
 			while(dist < 0.1){
 				ROS_INFO("Backing up: %f, %f, %f", dist, pos1X, posX);
 				angular = 0.0;
@@ -287,8 +199,10 @@ int main(int argc, char **argv)
 				vel.angular.z = angular;
   				vel.linear.x = linear;
   				vel_pub.publish(vel);
+  				//Distance is the hypotenus of x and y position changes
  				dist = sqrt((posX-pos1X)*(posX-pos1X)+(posY-pos1Y)*(posY-pos1Y));
 				ROS_INFO("Backing up: %f", dist);
+				//Position values must be updated
 				ros::spinOnce();
 			}
 			angular = 0.0;
@@ -296,7 +210,8 @@ int main(int argc, char **argv)
 			vel.angular.z = angular;
   			vel.linear.x = linear;
   			vel_pub.publish(vel);
-			//turn(10, vel_pub, vel);
+  			
+			//Turn away from the side of the impact
 			if(bRight==1)
 			{
 				turn(-25, vel_pub, vel);
@@ -318,10 +233,12 @@ int main(int argc, char **argv)
 			}
 		}
 		
+		//Then if we don't need to turn, go straight
 		else if(turnflag==0){
 			//ROS_INFO("Straightness: %f", yaw-straightYaw);
 			angular = 0.0;
 			linear = 0.2;
+			//Correct for drift by adjusting yaw back to the original straight yaw
 			if(abs(yaw-straightYaw)>pi/180){
 				if(yaw-straightYaw>0){
 					angular = -pi/8;
@@ -332,6 +249,8 @@ int main(int argc, char **argv)
 			}
 			
 		}
+		
+		//If we do need to turn, turn in 10 degree increments until the turn flag is released
 		else{
 			if(goRight){
 				turn(10, vel_pub, vel);
@@ -341,16 +260,20 @@ int main(int argc, char **argv)
 			}
 		}
 
+		//The robot needs to turn when the forward distance is less than 75cm
 		if(laserRange < 0.75 && turnflag==0){
 			turnflag = 1;
 			ROS_INFO("I NEED TO TURN!!!! %f",laserRange);
+			//Determines a random left or right turning direction once per turn
 			goRight = rand()%2;
 		}
+		//The turn flag is released at 100cm
 		else if(laserRange > 1 && turnflag==1){
 			turnflag = 0;
 
 			
 		}
+		//Velocities are published
 		vel.angular.z = angular;
   		vel.linear.x = linear;
 
