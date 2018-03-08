@@ -14,15 +14,16 @@ float x;
 float y;
 float phi;
 
-//variables for finding distances between points
+//variables for finding distances between pointss
 int nB = 5;
 float distances[5][5] = {0};
 float rCoord[3];
 int order[5];
+bool used[5] = {0};
 float lowest;
 int cnt = 0;
 float newCoords [5][3];
-float botDistance = 0.5;
+float botDistance = 0.3;
 
 
 void poseCallback(const geometry_msgs::PoseWithCovarianceStamped& msg){
@@ -36,7 +37,7 @@ void pathCalc(std::vector<std::vector<float> > coord){
 
 	for (int i = 0; i < coord.size(); ++i){
 		newCoords[i][0] = coord[i][0]+botDistance*cos(coord[i][2]);
-		newCoords[i][1] = coord[i][0]+botDistance*sin(coord[i][2]);
+		newCoords[i][1] = coord[i][1]+botDistance*sin(coord[i][2]);
 		if(coord[i][2] > 0){
 			newCoords[i][2] = coord[i][2] - PI;
 		}else{
@@ -76,9 +77,9 @@ void distCalcs(float newCoords[][3]){
 	
 	// print distance table
 	for (int i = 0; i < nB; ++i){
-		cout << i << "  ";
+		cout << i << endl;
 		for (int j = 0; j < nB; ++j){
-			cout << i << newCoords[i][j] << endl;
+			cout << j << "  " << newCoords[i][j] << endl;
 		}
 		cout << endl;
 	}
@@ -89,12 +90,15 @@ void distCalcs(float newCoords[][3]){
 void choosePath(float distances[][5]){
 	// This section determines the fastest path to each object location (so far only considering shortest distance)
 	for (int i = 0; i < 5; ++i){
-		lowest = distances[i][i];
-		order[i] = 0;	
+		lowest = fabs(distances[i][i]);
+		order[i] = i;	
+		used[i] = 1;
 		for (int j = 0; j < 5; ++j){
-			if (distances[i][j] < lowest && i != j-1){
-				lowest = distances[i][j];
-				order[i] = j;
+			if (fabs(distances[i][j]) < lowest && i != j-1 && used[j] != 1){
+				lowest = fabs(distances[i][j]);
+				order[i] = j-1;
+				used[i] = 0;
+				used[j] = 1;
 			}
 		}
 	}
@@ -107,7 +111,7 @@ void choosePath(float distances[][5]){
 
 }
 
-//-------------------------move robot function---------------
+//-------------------------move robot function----------------
 bool moveToGoal(float xGoal, float yGoal, float phiGoal){
 
 	//define a client for to send goal requests to the move_base server through a SimpleActionClient
@@ -167,13 +171,14 @@ int main(int argc, char** argv){
 		cout << i << " x: " << coord[i][0] << " y: " << coord[i][1] << " z: " << coord[i][2] << endl;
 	}
 
-	imageTransporter imgTransport("camera/image/", sensor_msgs::image_encodings::BGR8); // For Kinect
+	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
 
-	// rewrite desired distance and coords to spots
+	// rewrite desired distance and coords to spaces
 	pathCalc(coord); // should be first before distCalcs and choosePath
-	// calculating distances and desired path	
+	// calculating distances and desired path	 
 	distCalcs(newCoords);
 	choosePath(distances);
+	cnt = 1;
 
 	while(ros::ok()){
 		ros::spinOnce();
@@ -181,9 +186,15 @@ int main(int argc, char** argv){
    		eStop.block();
     		//...................................
 
-    		//fill with your code
-		moveToGoal(newCoords[cnt][0], newCoords[cnt][1], newCoords[cnt][2]);
-		cnt = cnt + 1;
+    		//fill with your  code
+		
+		if (cnt <= 4){
+			cout << cnt << endl;
+			moveToGoal(newCoords[cnt][0], newCoords[cnt][1], newCoords[cnt][2]);
+			//moveToGoal(-1.5, 2.5, 0);
+			cnt = cnt + 1;
+			cout << cnt << endl;
+		}
 
 		// do image recognition here
 		
