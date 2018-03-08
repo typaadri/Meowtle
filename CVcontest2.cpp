@@ -5,7 +5,7 @@
 
 #include <eStop.h>
 
-//Tutorial Code
+//Tutorial Codee
 #include <stdio.h>
 #include <iostream>
 #include "opencv2/core.hpp"
@@ -33,38 +33,8 @@ void readme(){
 	std::cout<<" Usage: ./SURF_descriptor <img1> <img2>" << std::endl;
 }
 
-int main(int argc, char** argv){
-	ros::init(argc, argv, "map_navigation_node");
-	ros::NodeHandle n;
-	ros::spinOnce();
-  	teleController eStop;
-
-	ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, poseCallback);
-	
-	vector<vector<float> > coord;
-	vector<cv::Mat> imgs_track;	
-	if(!init(coord, imgs_track)) return 0;
-
-	for(int i = 0; i < coord.size(); ++i){
-		cout << i << " x: " << coord[i][0] << " y: " << coord[i][1] << " z: " << coord[i][2] << endl;
-	}
-
-	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
-
-	while(ros::ok()){
-		ros::spinOnce();
-  		//.....**E-STOP DO NOT TOUCH**.......
-   		eStop.block();
-    		//....................................
-
-    		//Tutorial Code
-
-		Mat img_object = imread("/home/turtlebot/catkin_ws/src/mie443_contest2/pics/tag1.jpg", IMREAD_GRAYSCALE );
-		Mat img_scene = imgTransport.getImg();
-		if( !img_object.data)
-			{std::cout<< " --(!) Error reading object image " << std::endl; return -1; }
-		if(!img_scene.data )
-			{std::cout<< " --(!) Error reading scene image " << std::endl; return -1; }
+bool isMatch(Mat img_object, Mat img_scene){
+		int num=0;
 		int minHessian = 400;
 		Ptr<SURF> detector = SURF::create(minHessian);
 		vector<KeyPoint> keypoints_object, keypoints_scene;
@@ -109,6 +79,53 @@ int main(int argc, char** argv){
 		imshow("Good Matches & Object Detection", img_matches);
 		waitKey(0);
 		
+		if(scene_corners[0]!=scene_corners[1])
+			return true;
+		return false;
+}
+
+int main(int argc, char** argv){
+	ros::init(argc, argv, "map_navigation_node");
+	ros::NodeHandle n;
+	ros::spinOnce();
+  	teleController eStop;
+
+	ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, poseCallback);
+	
+	vector<vector<float> > coord;
+	vector<cv::Mat> imgs_track;	
+	if(!init(coord, imgs_track)) return 0;
+
+	for(int i = 0; i < coord.size(); ++i){
+		cout << i << " x: " << coord[i][0] << " y: " << coord[i][1] << " z: " << coord[i][2] << endl;
+	}
+
+	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
+
+	while(ros::ok()){
+		ros::spinOnce();
+  		//.....**E-STOP DO NOT TOUCH**.......
+   		eStop.block();
+    		//....................................
+
+    		//Tutorial Code
+
+		Mat img_raisin = imread("/home/turtlebot/catkin_ws/src/mie443_contest2/pics/tag1.jpg", IMREAD_GRAYSCALE );
+		Mat img_cinnamon = imread("/home/turtlebot/catkin_ws/src/mie443_contest2/pics/tag2.jpg", IMREAD_GRAYSCALE );
+		Mat img_rice = imread("/home/turtlebot/catkin_ws/src/mie443_contest2/pics/tag3.jpg", IMREAD_GRAYSCALE );
+
+		Mat img_cam = imgTransport.getImg();
+		if(!img_raisin.data||!img_cinnamon.data||!img_rice.data)
+			{std::cout<< " --(!) Error reading stored images " << std::endl; return -1; }
+		if(!img_cam.data )
+			{std::cout<< " --(!) Error reading camera image " << std::endl; return -1; }
+
+		if(isMatch(img_raisin,img_cam))
+			cout << "This is a raisin." << endl;
+		if(isMatch(img_cinnamon,img_cam))
+			cout << "This is a cinnamon." << endl;
+		if(isMatch(img_rice,img_cam))
+			cout << "This is a rice." << endl;
 	}
 	return 0;
 }
