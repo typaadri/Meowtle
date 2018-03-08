@@ -34,7 +34,9 @@ void readme(){
 }
 
 bool isMatch(Mat img_object, Mat img_scene){
-		int num=0;
+    int avgDist=0;
+		int count=0;
+		int sunDist=0;
 		int minHessian = 400;
 		Ptr<SURF> detector = SURF::create(minHessian);
 		vector<KeyPoint> keypoints_object, keypoints_scene;
@@ -63,7 +65,10 @@ bool isMatch(Mat img_object, Mat img_scene){
 		for(int i=0; i< good_matches.size(); i++){
 			obj.push_back(keypoints_object[ good_matches[i].queryIdx].pt);
 			scene.push_back(keypoints_scene[ good_matches[i].trainIdx].pt);
+			count++;
+			sumDist+=good_matches[i].distance;
 		}
+		avgDist=sumDist/count;
 		Mat H = findHomography(obj, scene, RANSAC);
 		std::vector<Point2f> obj_corners(4);
 		obj_corners[0] = cvPoint(0,0);
@@ -79,7 +84,8 @@ bool isMatch(Mat img_object, Mat img_scene){
 		imshow("Good Matches & Object Detection", img_matches);
 		waitKey(0);
 		
-		if(scene_corners[0]!=scene_corners[1])
+		cout << "There are " << count << " matches, with an average distance of " << avgDist << "."<< endl;
+		if(count>70)
 			return true;
 		return false;
 }
@@ -101,6 +107,9 @@ int main(int argc, char** argv){
 	}
 
 	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
+	
+	//Stores which image is at which location: -1 = no data, 0 = blank, 1 = raisin, 2 = cinnamon, 3 = rice
+	int loc [5] = {-1,-1,-1,-1,-1};
 
 	while(ros::ok()){
 		ros::spinOnce();
@@ -120,12 +129,22 @@ int main(int argc, char** argv){
 		if(!img_cam.data )
 			{std::cout<< " --(!) Error reading camera image " << std::endl; return -1; }
 
-		if(isMatch(img_raisin,img_cam))
+		if(isMatch(img_raisin,img_cam)){
+		  loc[currLoc]=1;  
 			cout << "This is a raisin." << endl;
-		if(isMatch(img_cinnamon,img_cam))
+		} 
+		else if(isMatch(img_cinnamon,img_cam)){
+		  loc[currLoc]=2;
 			cout << "This is a cinnamon." << endl;
-		if(isMatch(img_rice,img_cam))
+		}
+		else if(isMatch(img_rice,img_cam)){
+		  loc[currLoc]=3;
 			cout << "This is a rice." << endl;
+		} 
+		else{
+		  loc[currLoc]=0;
+		  cout << "This is a blank." << endl;
+		}
 	}
 	return 0;
 }
