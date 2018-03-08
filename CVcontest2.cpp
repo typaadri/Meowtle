@@ -34,9 +34,9 @@ void readme(){
 }
 
 bool isMatch(Mat img_object, Mat img_scene){
-    int avgDist=0;
+    float avgDist=0;
 		int count=0;
-		int sunDist=0;
+		float sumDist=0;
 		int minHessian = 400;
 		Ptr<SURF> detector = SURF::create(minHessian);
 		vector<KeyPoint> keypoints_object, keypoints_scene;
@@ -85,7 +85,7 @@ bool isMatch(Mat img_object, Mat img_scene){
 		waitKey(0);
 		
 		cout << "There are " << count << " matches, with an average distance of " << avgDist << "."<< endl;
-		if(count>70)
+		if(count<30)
 			return true;
 		return false;
 }
@@ -110,6 +110,7 @@ int main(int argc, char** argv){
 	
 	//Stores which image is at which location: -1 = no data, 0 = blank, 1 = raisin, 2 = cinnamon, 3 = rice
 	int loc [5] = {-1,-1,-1,-1,-1};
+	int currLoc = 0;
 
 	while(ros::ok()){
 		ros::spinOnce();
@@ -133,11 +134,11 @@ int main(int argc, char** argv){
 		  loc[currLoc]=1;  
 			cout << "This is a raisin." << endl;
 		} 
-		else if(isMatch(img_cinnamon,img_cam)){
+		if(isMatch(img_cinnamon,img_cam)){
 		  loc[currLoc]=2;
 			cout << "This is a cinnamon." << endl;
 		}
-		else if(isMatch(img_rice,img_cam)){
+		if(isMatch(img_rice,img_cam)){
 		  loc[currLoc]=3;
 			cout << "This is a rice." << endl;
 		} 
