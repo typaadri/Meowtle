@@ -16,7 +16,7 @@ float phi;
 
 //variables for finding distances between pointss
 int nB = 5;
-float distances[5][5] = {0};
+float distances[6][5] = {0};
 float rCoord[3];
 int order[5];
 bool used[5] = {0};
@@ -44,14 +44,14 @@ void pathCalc(std::vector<std::vector<float> > coord){
 			newCoords[i][2] = coord[i][2] + PI;
 		}
 	}
-	
-	//print oldcoord table	
+
+	//print oldcoord table
 	cout << "old co-ordinate table" << endl;
 	for(int i = 0; i < coord.size(); ++i){
 		cout << i << " x: " << coord[i][0] << " y: " << coord[i][1] << " z: " << coord[i][2] << endl;
 	}
 
-	//print newcoord table	
+	//print newcoord table
 	cout << endl << "new co-ordinate table" << endl;
 	for(int i = 0; i < coord.size(); ++i){
 		cout << i << " x: " << newCoords[i][0] << " y: " << newCoords[i][1] << " z: " << newCoords[i][2] << endl;
@@ -64,22 +64,25 @@ void distCalcs(float newCoords[][3]){
 	rCoord[0] = x;
 	rCoord[1] = y;
 	rCoord[2] = phi;
-	
-	for (int i = 0; i < 5; ++i){
+
+	for (int i = 0; i < 6; ++i){
 		for (int j = 0; j < 5; ++j){
 			if(i < 1){
 				distances[i][j] = sqrtf( powf( (rCoord[0]-newCoords[j][0]) , 2 ) + powf( (rCoord[1]-newCoords[j][1]) , 2 ) );
-			}else if(j-1 != i){
-				distances[i][j] = sqrtf( powf( (newCoords[i][0]-newCoords[j][0]) , 2 ) + powf( (newCoords[i][1]-newCoords[j][1]) , 2 ) );
+			}else if(j+1 == i){
+			    distances[i][j] = 100;
+			}else {
+				distances[i][j] = sqrtf( powf( (newCoords[i-1][0]-newCoords[j][0]) , 2 ) + powf( (newCoords[i-1][1]-newCoords[j][1]) , 2 ) );
 			}
 		}
 	}
-	
+
 	// print distance table
-	for (int i = 0; i < nB; ++i){
+	cout << endl;
+	for (int i = 0; i < 6; ++i){
 		cout << i << endl;
-		for (int j = 0; j < nB; ++j){
-			cout << j << "  " << newCoords[i][j] << endl;
+		for (int j = 0; j < 5; ++j){
+			cout << j << "  " << distances[i][j] << endl;
 		}
 		cout << endl;
 	}
@@ -89,25 +92,44 @@ void distCalcs(float newCoords[][3]){
 
 void choosePath(float distances[][5]){
 	// This section determines the fastest path to each object location (so far only considering shortest distance)
-	for (int i = 0; i < 5; ++i){
-		lowest = fabs(distances[i][i]);
-		order[i] = i;	
-		used[i] = 1;
-		for (int j = 0; j < 5; ++j){
-			if (fabs(distances[i][j]) < lowest && i != j-1 && used[j] != 1){
-				lowest = fabs(distances[i][j]);
-				order[i] = j-1;
-				used[i] = 0;
-				used[j] = 1;
-			}
-		}
+
+	lowest = fabs(distances[0][0]);
+    order[0] = 0;
+    used[order[0]] = 1;
+	for (int j = 1; j < 5; ++j){
+        if (fabs(distances[0][j]) < lowest){
+            lowest = fabs(distances[0][j]);
+            used[order[0]] = 0;
+            order[0] = j;
+            used[order[0]] = 1;
+        }
 	}
 
-	// print order table
+	for (int k = 1; k < 5; ++k){
+        lowest = fabs(distances[1][order[k-1]]);
+        order[k] = 0;
+        used[order[k]] = 1;
+        for (int l = 1; l < 6; ++l){
+            if (fabs(distances[l][order[k-1]]) < lowest && (order[k-1] + 1) != l && used[l-1] != 1){
+                lowest = fabs(distances[l][order[k-1]]);
+                used[order[k]] = 0;
+                order[k] = l-1;
+                used[order[k]] = 1;
+            }
+        }
+	}
+
 	cout << endl << "Order of Points to Visit" << endl;
-	for (int i = 0; i < 5; ++i){
+	for (i = 0; i < 5; ++i){
 		cout << order[i] << ", ";
 	}
+	cout << endl << endl;
+
+    cout << "Used Points" << endl;
+	for (i = 0; i < 5; ++i){
+		cout << used[i] << ", ";
+	}
+	cout << endl << endl;
 
 }
 
@@ -162,9 +184,9 @@ int main(int argc, char** argv){
   	teleController eStop;
 
 	ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, poseCallback);
-	
+
 	vector<vector<float> > coord; // co-ordinate vector for boxes
-	vector<cv::Mat> imgs_track;	
+	vector<cv::Mat> imgs_track;
 	if(!init(coord, imgs_track)) return 0;
 
 	for(int i = 0; i < coord.size(); ++i){
@@ -174,8 +196,8 @@ int main(int argc, char** argv){
 	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
 
 	// rewrite desired distance and coords to spaces
-	pathCalc(coord); // should be first before distCalcs and choosePath
-	// calculating distances and desired path	 
+	pathCalc(coord);
+	// calculating distances and desired path
 	distCalcs(newCoords);
 	choosePath(distances);
 	cnt = 1;
@@ -186,19 +208,20 @@ int main(int argc, char** argv){
    		eStop.block();
     		//...................................
 
-    		//fill with your  code
-		
 		if (cnt <= 4){
-			cout << cnt << endl;
-			moveToGoal(newCoords[cnt][0], newCoords[cnt][1], newCoords[cnt][2]);
+			cout << endl << "Position " << cnt << endl;
+			moveToGoal(newCoords[order[cnt]][0], newCoords[order[cnt]][1], newCoords[order[cnt]][2]);
 			//moveToGoal(-1.5, 2.5, 0);
 			cnt = cnt + 1;
-			cout << cnt << endl;
+			cout << order[cnt] << endl;
+
+			// image recognition stuff goes here or can be changed, depends if you need the while loop or not
+
 		}
 
-		// do image recognition here
-		
-		
+		// final prints and etc go here
+
+
 	}
 	return 0;
 }
