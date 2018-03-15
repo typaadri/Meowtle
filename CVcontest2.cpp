@@ -85,7 +85,7 @@ bool isMatch(Mat img_object, Mat img_scene){
 		waitKey(0);
 		
 		cout << "There are " << count << " matches, with an average distance of " << avgDist << "."<< endl;
-		if(count<30)
+		if(count<30&&avgDist<0.2)
 			return true;
 		return false;
 }
@@ -109,7 +109,7 @@ int main(int argc, char** argv){
 	imageTransporter imgTransport("/camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); // For Kinect
 	
 	//Stores which image is at which location: -1 = no data, 0 = blank, 1 = raisin, 2 = cinnamon, 3 = rice
-	int loc [5] = {-1,-1,-1,-1,-1};
+	int tag [5] = {-1,-1,-1,-1,-1};
 	int currLoc = 0;
 
 	while(ros::ok()){
@@ -125,28 +125,38 @@ int main(int argc, char** argv){
 		Mat img_rice = imread("/home/turtlebot/catkin_ws/src/mie443_contest2/pics/tag3.jpg", IMREAD_GRAYSCALE );
 
 		Mat img_cam = imgTransport.getImg();
-		if(!img_raisin.data||!img_cinnamon.data||!img_rice.data)
-			{std::cout<< " --(!) Error reading stored images " << std::endl; return -1; }
-		if(!img_cam.data )
-			{std::cout<< " --(!) Error reading camera image " << std::endl; return -1; }
-
-		if(isMatch(img_raisin,img_cam)){
-		  loc[currLoc]=1;  
-			cout << "This is a raisin." << endl;
-		} 
-		if(isMatch(img_cinnamon,img_cam)){
-		  loc[currLoc]=2;
-			cout << "This is a cinnamon." << endl;
-		}
-		if(isMatch(img_rice,img_cam)){
-		  loc[currLoc]=3;
-			cout << "This is a rice." << endl;
-		} 
+		if(!img_raisin.data||!img_cinnamon.data||!img_rice.data||!img_cam.data )
+			{std::cout<< " --(!) Error reading images " << std::endl; }
 		else{
-		  loc[currLoc]=0;
-		  cout << "This is a blank." << endl;
+			if(isMatch(img_raisin,img_cam)){
+			  tag[currLoc]=1;  
+				cout << "This is a raisin." << endl;
+			} 
+			else if(isMatch(img_cinnamon,img_cam)){
+			  tag[currLoc]=2;
+				cout << "This is a cinnamon." << endl;
+			}
+			else if(isMatch(img_rice,img_cam)){
+			  tag[currLoc]=3;
+				cout << "This is a rice." << endl;
+			} 
+			else{
+			  tag[currLoc]=0;
+			  cout << "This is a blank." << endl;
+			}
 		}
 	}
+	cout << "The tags are as follows:" << endl;
+	for(int i=1;i<=5;i++){
+		cout << "Tag " << i << " is " ;
+		switch(tag[i]){
+			case 0 : cout << "blank." << endl;
+			case 1 : cout << "Raisin Bran." << endl;
+			case 2 : cout << "Cinnamon Toast Crunch." << endl;
+			case 3 : cout << "Rice Krispies." << endl;
+		}
+	}
+	
 	return 0;
 }
 
