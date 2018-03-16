@@ -96,7 +96,7 @@ bool isMatch(Mat img_object, Mat img_scene){
 			line(img_matches, scene_corners[2] + Point2f(img_object.cols, 0), scene_corners[3] + Point2f(img_object.cols, 0), Scalar(0,255,0),4);
 			line(img_matches, scene_corners[3] + Point2f(img_object.cols, 0), scene_corners[0] + Point2f(img_object.cols, 0), Scalar(0,255,0),4);
 			imshow("Good Matches & Object Detection", img_matches);
-			waitKey(0);
+			//waitKey(0);
 			for(int i=0; i< good_matches.size(); i++){
 				count++;
 				sumDist+=good_matches[i].distance;
@@ -312,15 +312,16 @@ int main(int argc, char** argv){
   		//.....**E-STOP DO NOT TOUCH**.......
    		eStop.block();
     		//...................................
-
 		if (currLoc <= 4){
 			cout << endl << "Position " << currLoc + 1 << endl;
 			success[currLoc] = moveToGoal(newCoords[order[currLoc]][0], newCoords[order[currLoc]][1], newCoords[order[currLoc]][2]);
 							//moveToGoal(-1.5, 2.5, 0);
-			
+			ros::spinOnce();
+			img_cam =  imgTransport.getImg();
+
 			if(success[currLoc]){
 				//cout << order[currLoc] << endl;
-				img_cam =  imgTransport.getImg();
+				//img_cam =  imgTransport.getImg();
 				
 				if(!img_raisin.data||!img_cinnamon.data||!img_rice.data||!img_cam.data )
 					{std::cout<< " --(!) Error reading images " << std::endl; }
@@ -346,10 +347,10 @@ int main(int argc, char** argv){
 			currLoc = currLoc + 1;
 			
 
-		} else if (currLoc = 5){
+		} else if (currLoc == 5){
 			for(int i=0;i<5;i++){
-				if(!success[currLoc]){
-					success[currLoc] = moveToGoal(newCoords[order[currLoc]][0], newCoords[order[currLoc]][1], newCoords[order[currLoc]][2]); 
+				if(!success[i]){
+					success[i] = moveToGoal(newCoords[order[i]][0], newCoords[order[i]][1], newCoords[order[i]][2]); 
 				}
 			}
 			moveToGoal(xStart, yStart, phiStart);
