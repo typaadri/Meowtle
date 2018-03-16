@@ -28,6 +28,7 @@ float xStart, yStart, phiStart;
 
 //Stores which image is at which location: -1 = no data, 0 = blank, 1 = raisin, 2 = cinnamon, 3 = rice
 int tag [5] = {-1,-1,-1,-1,-1};
+int tagAgain [5] = {-1,-1,-1,-1,-1};
 int currLoc = 0;
 int success[5] = {0,0,0,0,0};
 
@@ -351,10 +352,28 @@ int main(int argc, char** argv){
 			for(int i=0;i<5;i++){
 				if(!success[i]){
 					success[i] = moveToGoal(newCoords[order[i]][0], newCoords[order[i]][1], newCoords[order[i]][2]); 
+					ros::spinOnce();
+					img_cam =  imgTransport.getImg();
+					if(isMatch(img_raisin,img_cam)){
+					  	tagAgain[i]=1;  
+						cout << "This is a raisin." << endl;
+					} 
+					else if(isMatch(img_cinnamon,img_cam)){
+					  	tagAgain[i]=2;
+						cout << "This is a cinnamon." << endl;
+					}
+					else if(isMatch(img_rice,img_cam)){
+						tagAgain[i]=3;
+						cout << "This is a rice." << endl;
+					} 
+					else{
+						tagAgain[i]=0;
+					 	cout << "This is a blank." << endl;
+					}
 				}
 			}
 			moveToGoal(xStart, yStart, phiStart);
-			cout << "Finished";
+			cout << "Finished" << endl;
 			currLoc = currLoc + 1;
 			int saw[]={0,0,0,0,0};
 			cout << "The tags are as follows:" << endl;
@@ -398,6 +417,52 @@ int main(int argc, char** argv){
 						} 
 						break;
 					default: cout << "Failed Scan" << endl;
+				}
+
+			}
+			cout << endl;
+			for(int i=0;i<5;i++){
+				if(tagAgain[i]>-1){
+					cout << "Location " << i+1 << " was visited again: " ;
+					switch(tagAgain[i]){
+						case 0 : cout << "Blank"; 
+							if(saw[tagAgain[i]]){
+								cout << " (duplicate)" << endl;
+							}
+							else{
+								cout << endl;
+								saw[tagAgain[i]]=1;
+							} 		
+							break;
+						case 1 : cout << "Raisin Bran";
+							if(saw[tagAgain[i]]){
+								cout << " (duplicate)" << endl;
+							}
+							else{
+								cout << endl;
+								saw[tagAgain[i]]=1;
+							} 
+							break;
+						case 2 : cout << "Cinnamon Toast Crunch"; 
+							if(saw[tagAgain[i]]){
+								cout << " (duplicate)" << endl;
+							}
+							else{
+								cout << endl;
+								saw[tagAgain[i]]=1;
+							} 
+							break;
+						case 3 : cout << "Rice Krispies"; 
+							if(saw[tagAgain[i]]){
+								cout << " (duplicate)" << endl;
+							}
+							else{
+								cout << endl;
+								saw[tagAgain[i]]=1;
+							} 
+							break;
+						default: cout << "Failed Scan" << endl;
+					}
 				}
 
 			}
