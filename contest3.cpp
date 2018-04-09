@@ -336,46 +336,20 @@ int main(int argc, char **argv)
 			cv::imshow( "Emotion", cat_fear);
 			waitKey(100);
 			sc.playWave("/home/turtlebot/catkin_ws/src/mie443_contest3/sounds/cat_fear.wav");
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = PI/6;
-				vel_pub.publish(follow_cmd);
+			
+			for(int j=0; j < 4; j++){
+				for(int i=0; i < 15000; i++){
+					follow_cmd.linear.x = 0;
+					follow_cmd.angular.z = PI/6;
+					vel_pub.publish(follow_cmd);
+				}
+				for(int i=0; i < 15000; i++){
+					follow_cmd.linear.x = 0;
+					follow_cmd.angular.z = -PI/6;
+					vel_pub.publish(follow_cmd);
+				}
 			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = -PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = -PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = -PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = PI/6;
-				vel_pub.publish(follow_cmd);
-			}
-			for(int i=0; i < 15000; i++){
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = -PI/6;
-				vel_pub.publish(follow_cmd);
-			}
+			
 			sc.stopWave("/home/turtlebot/catkin_ws/src/mie443_contest3/sounds/cat_fear.wav");
 			world_state = 0;
 		}
